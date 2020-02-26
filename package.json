@@ -1,0 +1,20 @@
+{
+  "name": "bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "league_bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Leo Jiang",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^11.5.1"
+  },
+  "devDependencies": {
+    "@angular/cli": "^9.0.3",
+    "@discordjs/uws": "^10.149.0",
+    "install-peers": "^1.0.3",
+    "string": "^3.3.3"
+  }
+}
