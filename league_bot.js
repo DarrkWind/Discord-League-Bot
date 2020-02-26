@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const league_bot = new Discord.Client();
-const token = 'NjgwMjU5NjUwMjEzMzgwMTI5.Xk9TUw.9RrF80-yxo-XSa2YLnWzWc3HJhA';
+const token = 'NjgwMjU5NjUwMjEzMzgwMTI5.Xlbbdw.PfqDDN_w6vMsEjTWIp9JlHzTt_U';
 const fs = require("fs");
 let usernames = require('./usernames.json');
 let secondary_roles = require('./secondary_roles.json');
@@ -114,7 +114,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
     }
 });
 
-league_bot.on('message', msg =>{
+league_bot.on('message', async (msg) =>{
     let args = msg.content.split(" ");
 
     function main_role_picker(){
@@ -152,9 +152,17 @@ league_bot.on('message', msg =>{
     function ign(){
         const league_name = new Discord.RichEmbed()
         .setColor(16522069)
-        .setDescription('What your Summoner Name? Enter below.')
+        .setDescription('What\'s your Summoner Name? Enter below.')
         msg.channel.send(league_name);
         return
+    }
+
+    function fav_champ(){
+        const fav = new Discord.RichEmbed()
+        .setColor(16522069)
+        .setDescription('What\'s your favorite champion? Enter below.')
+        msg.channel.send(fav);
+        return 
     }
 
     switch(args[0]){
@@ -341,18 +349,19 @@ league_bot.on('message', msg =>{
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                         if (err) console.log(err)
                     });
-                }).then(() => {
-                    const collector2 = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 20000 });
-                    collector2.on('collect', message => {
-                        user_profile[msg.author.username].Favorite_champion = message.content;
-                        fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
-                            if (err) console.log(err)
-                        })
-                    })
-                }).then(() =>{
-                main_role_picker();
                 });
-                secondary_role_picker();
+                fav_champ();
+                const collector2 = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 20000 });
+                collector2.on('collect', message => {
+                    user_profile[msg.author.username].Favorite_champion = message.content;
+                    fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
+                        if (err) console.log(err)
+                    });
+                });
+
+                main_role_picker();
+            
+                
             }
             else 
             {
