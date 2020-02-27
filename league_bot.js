@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const league_bot = new Discord.Client();
-const token = 'NjgwMjU5NjUwMjEzMzgwMTI5.Xlbbdw.PfqDDN_w6vMsEjTWIp9JlHzTt_U';
+const token = '';
 const fs = require("fs");
 let usernames = require('./usernames.json');
 let secondary_roles = require('./secondary_roles.json');
@@ -8,10 +8,10 @@ let available_players = require('./available_players.json');
 let user_profile = require('./user_profile.json');
 var last_msg_id;
 var last_msg_id2;
-
-
-
+var user_msg_id;
 var filecontent = available_players;
+
+
 
 league_bot.on('ready',() =>{
     console.log('League Bot activated!');
@@ -23,7 +23,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
     //console.log(reaction.message.id);
     //console.log(last_msg_id);
 
-    if (reaction.message.id === last_msg_id)
+    if ((reaction.message.id === last_msg_id) && (user.id  === user_msg_id))
     {
         var reaction_emoji = reaction.emoji.name;
         var data = fs.readFileSync("usernames.json",'utf8',(err) => {        
@@ -50,7 +50,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
                 const roleconfirmed = new Discord.RichEmbed()
                 .setColor(0xFF0000)
                 .setDescription('You have picked your role as: ' + reaction_emoji)
-                msg.channel.send(roleconfirmed)
+                msg.channel.send(roleconfirmed);
                 if (usernames[reaction_emoji].Usernames === 'None')
                 {
                     usernames[reaction_emoji].Usernames = '';
@@ -63,12 +63,22 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
                 fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                     if (err) console.log(err)
                 });
+                const rolepicker2 = new Discord.RichEmbed()
+                .setColor(16522069)
+                .setDescription('What is your secondary role?')
+                msg.channel.send(rolepicker2).then(msgReaction => {
+                    last_msg_id2 = msgReaction.id;
+                    msgReaction.react('680879499381833795')
+                    .then(() => msgReaction.react('680879507389153378'))
+                    .then(() => msgReaction.react('680879520441696257'))
+                    .then(() => msgReaction.react('680879524270964808'))
+                    .then(() => msgReaction.react('680879535532539920'))
+                    .catch(() => console.error('One of the emojis failed to react.'));
+                }); 
             }
         });
-        
     }
-
-    if (reaction.message.id === last_msg_id2)
+    if ((reaction.message.id === last_msg_id2) && (user.id  === user_msg_id))
     {
         var reaction_emoji = reaction.emoji.name;
         var data = fs.readFileSync("secondary_roles.json",'utf8',(err) => {        
@@ -95,7 +105,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
                 const roleconfirmed = new Discord.RichEmbed()
                 .setColor(0xFF0000)
                 .setDescription('You have picked your role as: ' + reaction_emoji)
-                msg.channel.send(roleconfirmed)
+                msg.channel.send(roleconfirmed);
                 if (secondary_roles[reaction_emoji].Usernames === 'None')
                 {
                     secondary_roles[reaction_emoji].Usernames = '';
@@ -108,13 +118,18 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
                 fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                     if (err) console.log(err)
                 });
+                const end = new Discord.RichEmbed()
+                .setColor(16757759)
+                .setDescription('Type !profile to view your new profile.')
+                msg.channel.send(end);
+                
             }
         });
         
-    }
+    } 
 });
 
-league_bot.on('message', async (msg) =>{
+league_bot.on('message', msg =>{
     let args = msg.content.split(" ");
 
     function main_role_picker(){
@@ -132,22 +147,7 @@ league_bot.on('message', async (msg) =>{
             }); 
         return 
     }
-
-    function secondary_role_picker(){
-        const rolepicker2 = new Discord.RichEmbed()
-            .setColor(16522069)
-            .setDescription('What role is your secondary main?')
-            msg.channel.send(rolepicker2).then(msgReaction => {
-                last_msg_id2 = msgReaction.id;
-                msgReaction.react('680879499381833795')
-                .then(() => msgReaction.react('680879507389153378'))
-                .then(() => msgReaction.react('680879520441696257'))
-                .then(() => msgReaction.react('680879524270964808'))
-                .then(() => msgReaction.react('680879535532539920'))
-			    .catch(() => console.error('One of the emojis failed to react.'));
-            }); 
-        return
-    }
+    
 
     function ign(){
         const league_name = new Discord.RichEmbed()
@@ -170,8 +170,8 @@ league_bot.on('message', async (msg) =>{
             const help = new Discord.RichEmbed()
             .setTitle('List of Commands')
             .addField('!profile', 'Displays user profile.')
-            .addField('!createprofile', 'Creates user profile(COMING SOON).')
-            .addField('!editprofile', 'Edit your profile.')
+            .addField('!createprofile', 'Creates user profile.')
+            .addField('!editprofile', 'Edit your profile(COMING SOON).')
             .addField('!whosplaying', 'Check out who\'s playing today.')
             .addField('!addme','Type this command if you are playing today.')
             .addField('!removeme', 'Type this command if you don\'t want to play.')
@@ -262,12 +262,12 @@ league_bot.on('message', async (msg) =>{
             var str_available_players = JSON.parse(available_players_data);
             if (str_available_players.Usernames.includes(msg.author.username))
             {
-                msg.channel.sendMessage('You have already been added to the List.');
+                msg.channel.send('You have already been added to the List.');
             }
             else
             {
                 const embed3 = new Discord.RichEmbed()
-                .setColor(16522069)
+                .setColor(6750105)
                 .setDescription('You have been added!')
                 msg.channel.send(embed3);
                 filecontent.Usernames += msg.author.username + '\n';
@@ -314,6 +314,7 @@ league_bot.on('message', async (msg) =>{
                 .addField('Secondary Role','role',true)
                 .addField('Favorite Champion:','Coming Soon')
                 .addField('Coins:','Coming Soon')
+                .setFooter('Type !createprofile to create one.')
                 msg.channel.send(default_profile);
             }
             else
@@ -341,7 +342,8 @@ league_bot.on('message', async (msg) =>{
                     Secondary_role: '',
                     Favorite_champion: ''
                 };
-
+                user_msg_id = msg.author.id;
+                let p = new Promise((resolve,reject) => {
                 ign();
                 const collector = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 20000 });
                 collector.on('collect', message => {
@@ -349,7 +351,18 @@ league_bot.on('message', async (msg) =>{
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                         if (err) console.log(err)
                     });
+                    if (user_profile[msg.author.username].IGN === message.content){
+                        resolve('sucess');
+                    }
+                    else{
+                        reject('fail');
+                    }
                 });
+               
+                });
+                
+                p.then(() => {
+                let p2 = new Promise((resolve,reject) => {
                 fav_champ();
                 const collector2 = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 20000 });
                 collector2.on('collect', message => {
@@ -357,10 +370,21 @@ league_bot.on('message', async (msg) =>{
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                         if (err) console.log(err)
                     });
+                    if (user_profile[msg.author.username].Favorite_champion === message.content){
+                        resolve('sucess');
+                    }
+                    else{
+                        reject('fail');
+                    }
                 });
 
-                main_role_picker();
-            
+                });
+
+                    p2.then(() => {
+                    main_role_picker()
+                    }).catch((err)=>{console.log(err)});
+
+                }).catch((err)=>{console.log(err)});  
                 
             }
             else 
