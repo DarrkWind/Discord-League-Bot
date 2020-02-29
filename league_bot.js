@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const league_bot = new Discord.Client();
-const token = '';
+const token = 'NjgwMjU5NjUwMjEzMzgwMTI5.Xlb-Eg.nMBK-rvoH1Jwa1dm3ja7-1e1prQ';
 const fs = require("fs");
 let usernames = require('./usernames.json');
 let secondary_roles = require('./secondary_roles.json');
@@ -9,12 +9,19 @@ let user_profile = require('./user_profile.json');
 var last_msg_id;
 var last_msg_id2;
 var user_msg_id;
-var filecontent = available_players;
+
 
 
 
 league_bot.on('ready',() =>{
     console.log('League Bot activated!');
+    setInterval(function(){ 
+        available_players.Usernames = '';
+        fs.writeFile("./available_players.json",JSON.stringify(available_players,null,2),(err) => {
+            if (err) console.log(err)
+        });
+    }, 1000 * 60 * 60 * 24);
+
 });
 
 league_bot.on('messageReactionAdd', (reaction, user) =>{
@@ -245,11 +252,14 @@ league_bot.on('message', msg =>{
             break;
 
         case '!whosplaying':
-            var anytime ="";
+            var str_playing = available_players.Usernames;
+            if (available_players.Usernames === ''){
+                str_playing = 'None';
+            }
             const embed2 = new Discord.RichEmbed()
             .setTitle('Available Users')
             .setColor(5844459)
-            .setDescription(filecontent.Usernames)
+            .setDescription(str_playing)
             .setFooter('Type !addme to be added')
             
             msg.channel.send(embed2);
@@ -270,8 +280,8 @@ league_bot.on('message', msg =>{
                 .setColor(6750105)
                 .setDescription('You have been added!')
                 msg.channel.send(embed3);
-                filecontent.Usernames += msg.author.username + '\n';
-                fs.writeFile("./available_players.json",JSON.stringify(filecontent,null,2),(err) => {
+                available_players.Usernames += msg.author.username + '\n';
+                fs.writeFile("./available_players.json",JSON.stringify(available_players,null,2),(err) => {
                 if (err) console.log(err)
                 });
     
@@ -334,18 +344,23 @@ league_bot.on('message', msg =>{
             break;
         
         case '!createprofile':
-            if (!user_profile[msg.author.username])
+            var data = fs.readFileSync("user_profile.json",'utf8',(err) => {        
+                if (err) throw err
+            });
+            var str_profile = JSON.parse(data);
+            if (!str_profile[msg.author.username])
             {   
                 user_profile[msg.author.username] = {
-                    IGN: '',
-                    Main_role: '',
-                    Secondary_role: '',
-                    Favorite_champion: ''
+                    IGN: 'None',
+                    Main_role: 'None',
+                    Secondary_role: 'None',
+                    Favorite_champion: 'None'
                 };
                 user_msg_id = msg.author.id;
                 let p = new Promise((resolve,reject) => {
                 ign();
-                const collector = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 20000 });
+                var notcollected = false;
+                const collector = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 180000 });
                 collector.on('collect', message => {
                     user_profile[msg.author.username].IGN = message.content;
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
@@ -359,12 +374,29 @@ league_bot.on('message', msg =>{
                     }
                 });
                
+                collector.on('end', collected =>{
+                    if (collected.size === 0){
+                       notcollected = true;
+                       delete user_profile[msg.author.username];
+                       fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
+                        if (err) console.log(err)
+                        });
+                    }
+             
+                });
+
+                setTimeout(function() {
+                if (notcollected === true){
+                    msg.channel.send('Your creation has expired. Please type !createprofile to try again');
+                }
+                }, 180000);
                 });
                 
                 p.then(() => {
                 let p2 = new Promise((resolve,reject) => {
                 fav_champ();
-                const collector2 = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 20000 });
+                var notcollected = false;
+                const collector2 = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 180000 });
                 collector2.on('collect', message => {
                     user_profile[msg.author.username].Favorite_champion = message.content;
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
@@ -377,7 +409,20 @@ league_bot.on('message', msg =>{
                         reject('fail');
                     }
                 });
-
+                collector2.on('end', collected =>{
+                    if (collected.size === 0){
+                        notcollected = true;
+                        delete user_profile[msg.author.username];
+                        fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
+                            if (err) console.log(err)
+                        });
+                    }
+                });
+                setTimeout(function() {
+                    if (notcollected === true){
+                        msg.channel.send('Your creation has expired. Please type !createprofile to try again');  
+                    }
+                }, 180000);
                 });
 
                     p2.then(() => {
