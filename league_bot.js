@@ -1,11 +1,12 @@
 const Discord = require('discord.js');
 const league_bot = new Discord.Client();
-const token = 'NjgwMjU5NjUwMjEzMzgwMTI5.Xlb-Eg.nMBK-rvoH1Jwa1dm3ja7-1e1prQ';
+const token = '';
 const fs = require("fs");
 let usernames = require('./usernames.json');
 let secondary_roles = require('./secondary_roles.json');
 let available_players = require('./available_players.json');
 let user_profile = require('./user_profile.json');
+let levelchart = require('./levels.json');
 var last_msg_id;
 var last_msg_id2;
 var user_msg_id;
@@ -55,7 +56,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
             else
             {
                 const roleconfirmed = new Discord.RichEmbed()
-                .setColor(0xFF0000)
+                .setColor(16522069)
                 .setDescription('You have picked your role as: ' + reaction_emoji)
                 msg.channel.send(roleconfirmed);
                 if (usernames[reaction_emoji].Usernames === 'None')
@@ -66,7 +67,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
                 fs.writeFile("./usernames.json",JSON.stringify(usernames,null,2),(err) => {
                 if (err) console.log(err)
                 });
-                user_profile[user.username].Main_role = reaction_emoji;
+                user_profile[user.id].Main_role = reaction_emoji;
                 fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                     if (err) console.log(err)
                 });
@@ -110,7 +111,7 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
             else
             {
                 const roleconfirmed = new Discord.RichEmbed()
-                .setColor(0xFF0000)
+                .setColor(16522069)
                 .setDescription('You have picked your role as: ' + reaction_emoji)
                 msg.channel.send(roleconfirmed);
                 if (secondary_roles[reaction_emoji].Usernames === 'None')
@@ -121,12 +122,12 @@ league_bot.on('messageReactionAdd', (reaction, user) =>{
                 fs.writeFile("./secondary_roles.json",JSON.stringify(secondary_roles,null,2),(err) => {
                 if (err) console.log(err)
                 });
-                user_profile[user.username].Secondary_role = reaction_emoji;
+                user_profile[user.id].Secondary_role = reaction_emoji;
                 fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                     if (err) console.log(err)
                 });
                 const end = new Discord.RichEmbed()
-                .setColor(16757759)
+                .setColor("E428F3")
                 .setDescription('Type !profile to view your new profile.')
                 msg.channel.send(end);
                 
@@ -170,6 +171,29 @@ league_bot.on('message', msg =>{
         .setDescription('What\'s your favorite champion? Enter below.')
         msg.channel.send(fav);
         return 
+    }
+    
+    if (msg.content.indexOf('!') !== 0){
+        var user_data = fs.readFileSync("user_profile.json",'utf8',(err) => {        
+            if (err) throw err
+        });
+        var str_check_user = JSON.parse(user_data);
+        if (str_check_user[msg.author.id])
+        {
+            var xp = Math.floor(Math.random() * 12) + 1;
+            user_profile[msg.author.id].XP += xp;
+            if (user_profile[msg.author.id].XP >= levelchart[`Level ${user_profile[msg.author.id].Level + 1}`])
+            {
+                user_profile[msg.author.id].Level += 1;
+                const levelup_embed = new Discord.RichEmbed()
+                .setColor("26EA9F")
+                .setDescription(`Congratulations <@${msg.author.id}>! You are now Level ${user_profile[msg.author.id].Level}!`)
+                msg.channel.send(levelup_embed).then(msg => {msg.delete(10000)}); 
+            }
+            fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
+                if (err) console.log(err)
+            });
+        }
     }
 
     switch(args[0]){
@@ -311,7 +335,11 @@ league_bot.on('message', msg =>{
             break;
         
         case '!profile':
-            if (!user_profile[msg.author.username])
+            var profile_data = fs.readFileSync("user_profile.json",'utf8',(err) => {        
+                if (err) throw err
+            });
+            var read_profile = JSON.parse(profile_data);
+            if (!user_profile[msg.author.id])
             {
                 msg.channel.send('You haven\'t created a profile yet. Here is the default one');
                 const default_profile = new Discord.RichEmbed()
@@ -333,11 +361,11 @@ league_bot.on('message', msg =>{
                 .setTitle(msg.author.username)
                 .setThumbnail(msg.author.displayAvatarURL)
                 .setColor(3407871)
-                .addField('IGN', user_profile[msg.author.username].IGN)
-                .addField('Level', 'Level 0')
-                .addField('Main Role', user_profile[msg.author.username].Main_role,true)
-                .addField('Secondary Role', user_profile[msg.author.username].Secondary_role,true)
-                .addField('Favorite Champion:', user_profile[msg.author.username].Favorite_champion)
+                .addField('IGN', read_profile[msg.author.id].IGN)
+                .addField('Level', read_profile[msg.author.id].Level)
+                .addField('Main Role', read_profile[msg.author.id].Main_role,true)
+                .addField('Secondary Role', read_profile[msg.author.id].Secondary_role,true)
+                .addField('Favorite Champion:', read_profile[msg.author.id].Favorite_champion)
                 .addField('Coins:','Coming Soon')
                 msg.channel.send(profile);
             }
@@ -348,13 +376,17 @@ league_bot.on('message', msg =>{
                 if (err) throw err
             });
             var str_profile = JSON.parse(data);
-            if (!str_profile[msg.author.username])
+            if (!str_profile[msg.author.id])
             {   
-                user_profile[msg.author.username] = {
+                user_profile[msg.author.id] = {
+                    Discord_name: msg.author.username,
                     IGN: 'None',
                     Main_role: 'None',
                     Secondary_role: 'None',
-                    Favorite_champion: 'None'
+                    Favorite_champion: 'None',
+                    Level: 0,
+                    XP: 0,
+                    Coins: 0
                 };
                 user_msg_id = msg.author.id;
                 let p = new Promise((resolve,reject) => {
@@ -362,11 +394,11 @@ league_bot.on('message', msg =>{
                 var notcollected = false;
                 const collector = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 180000 });
                 collector.on('collect', message => {
-                    user_profile[msg.author.username].IGN = message.content;
+                    user_profile[msg.author.id].IGN = message.content;
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                         if (err) console.log(err)
                     });
-                    if (user_profile[msg.author.username].IGN === message.content){
+                    if (user_profile[msg.author.id].IGN === message.content){
                         resolve('sucess');
                     }
                     else{
@@ -377,7 +409,7 @@ league_bot.on('message', msg =>{
                 collector.on('end', collected =>{
                     if (collected.size === 0){
                        notcollected = true;
-                       delete user_profile[msg.author.username];
+                       delete user_profile[msg.author.id];
                        fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                         if (err) console.log(err)
                         });
@@ -398,11 +430,11 @@ league_bot.on('message', msg =>{
                 var notcollected = false;
                 const collector2 = new Discord.MessageCollector(msg.channel, m => m.author.id === msg.author.id, { max: 1, time: 180000 });
                 collector2.on('collect', message => {
-                    user_profile[msg.author.username].Favorite_champion = message.content;
+                    user_profile[msg.author.id].Favorite_champion = message.content;
                     fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                         if (err) console.log(err)
                     });
-                    if (user_profile[msg.author.username].Favorite_champion === message.content){
+                    if (user_profile[msg.author.id].Favorite_champion === message.content){
                         resolve('sucess');
                     }
                     else{
@@ -412,7 +444,7 @@ league_bot.on('message', msg =>{
                 collector2.on('end', collected =>{
                     if (collected.size === 0){
                         notcollected = true;
-                        delete user_profile[msg.author.username];
+                        delete user_profile[msg.author.id];
                         fs.writeFile("./user_profile.json",JSON.stringify(user_profile,null,2),(err) => {
                             if (err) console.log(err)
                         });
@@ -444,7 +476,21 @@ league_bot.on('message', msg =>{
         case '!editprofile':
             break;
 
+        case '!level':
+            var data = fs.readFileSync("user_profile.json",'utf8',(err) => {        
+                if (err) throw err
+            });
+            var str_profile = JSON.parse(data);
+            const levelembed = new Discord.RichEmbed()
+            .setTitle(msg.author.username)
+            .setThumbnail(msg.author.displayAvatarURL)
+            .setDescription(`Level ${str_profile[msg.author.id].Level}`)
+            .addField('XP', `${str_profile[msg.author.id].XP} / ${levelchart[`Level ${user_profile[msg.author.id].Level + 1}`]}`)
+            .setColor(16522069)
+            msg.channel.send(levelembed);
+            break;
     }
+
 })
 
 league_bot.login(token);
